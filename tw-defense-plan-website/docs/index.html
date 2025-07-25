@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TW Defense Planner</title>
+  <style>
+    body { margin: 0; font-family: sans-serif; }
+    canvas { border: 1px solid #ccc; display: block; margin: 1rem auto; }
+    #toolbar { text-align: center; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <div id="toolbar">
+    <button onclick="addText()">Add Text</button>
+    <button onclick="downloadImage()">Export PNG</button>
+  </div>
+  <canvas id="tw-canvas" width="1200" height="675"></canvas>
+
+  <script>
+    const canvas = document.getElementById("tw-canvas");
+    const ctx = canvas.getContext("2d");
+
+    const img = new Image();
+    img.src = "map.png";
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    };
+
+    const texts = [];
+
+    canvas.addEventListener("click", (e) => {
+      const text = prompt("Enter text:");
+      if (text) {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        texts.push({ text, x, y });
+        redraw();
+      }
+    });
+
+    function redraw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      texts.forEach(t => {
+        ctx.fillStyle = "red";
+        ctx.font = "20px Arial";
+        ctx.fillText(t.text, t.x, t.y);
+      });
+    }
+
+    function downloadImage() {
+      const link = document.createElement("a");
+      link.download = "tw-defense-plan.png";
+      link.href = canvas.toDataURL();
+      link.click();
+    }
+  </script>
+</body>
+</html>
