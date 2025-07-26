@@ -1,67 +1,95 @@
+const overlay = document.getElementById("overlay");
+const addTextBoxBtn = document.getElementById("addTextBoxBtn");
+const fontSelect = document.getElementById("fontSelect");
+const fontSizeSelect = document.getElementById("fontSizeSelect");
+const fontColorPicker = document.getElementById("fontColorPicker");
+const boldBtn = document.getElementById("boldBtn");
+const italicBtn = document.getElementById("italicBtn");
+const deleteBtn = document.getElementById("deleteBtn");
 
-let currentTextBox = null;
-let offsetX, offsetY;
-const container = document.getElementById("map-container");
+let selectedBox = null;
+let creatingTextBox = false;
 
-document.getElementById("map").addEventListener("click", (e) => {
-  if (e.target.tagName === "TEXTAREA") return;
-  const box = document.createElement("textarea");
+addTextBoxBtn.onclick = () => {
+  creatingTextBox = true;
+  overlay.style.cursor = "crosshair";
+};
+
+overlay.onclick = (e) => {
+  if (!creatingTextBox) return;
+  const box = document.createElement("div");
   box.className = "text-box";
+  box.contentEditable = true;
   box.style.left = `${e.offsetX}px`;
   box.style.top = `${e.offsetY}px`;
-  box.contentEditable = true;
-  applyStyles(box);
-  enableInteractions(box);
-  container.appendChild(box);
-  box.focus();
-});
+  box.style.fontFamily = fontSelect.value;
+  box.style.fontSize = fontSizeSelect.value;
+  box.style.color = fontColorPicker.value;
+  box.style.fontWeight = boldBtn.classList.contains("active") ? "bold" : "normal";
+  box.style.fontStyle = italicBtn.classList.contains("active") ? "italic" : "normal";
 
-function applyStyles(box) {
-  box.style.fontFamily = document.getElementById("fontFamily").value;
-  box.style.fontSize = document.getElementById("fontSize").value;
-  box.style.color = document.getElementById("fontColor").value;
-  box.style.fontWeight = document.queryCommandState("bold") ? "bold" : "normal";
-  box.style.fontStyle = document.queryCommandState("italic") ? "italic" : "normal";
-}
+  box.onmousedown = (ev) => {
+    if (ev.target !== box) return;
+    selectedBox = box;
+    let shiftX = ev.clientX - box.getBoundingClientRect().left;
+    let shiftY = ev.clientY - box.getBoundingClientRect().top;
 
-function toggleBold() {
-  document.execCommand("bold", false);
-}
-function toggleItalic() {
-  document.execCommand("italic", false);
-}
+    const moveAt = (pageX, pageY) => {
+      box.style.left = pageX - shiftX + "px";
+      box.style.top = pageY - shiftY + "px";
+    };
 
-function enableInteractions(box) {
-  box.addEventListener("mousedown", (e) => {
-    currentTextBox = box;
-    offsetX = e.offsetX;
-    offsetY = e.offsetY;
+    const onMouseMove = (event) => {
+      moveAt(event.pageX, event.pageY);
+    };
+
+    document.addEventListener("mousemove", onMouseMove);
+
+    box.onmouseup = () => {
+      document.removeEventListener("mousemove", onMouseMove);
+      box.onmouseup = null;
+    };
+  };
+
+  box.onclick = (e) => {
     e.stopPropagation();
-  });
+    selectedBox = box;
+  };
 
-  box.addEventListener("mouseup", () => currentTextBox = null);
-  box.addEventListener("input", () => applyStyles(box));
+  overlay.appendChild(box);
+  creatingTextBox = false;
+  overlay.style.cursor = "default";
+};
 
-  box.setAttribute("contenteditable", "true");
-  box.spellcheck = false;
-  box.addEventListener("click", (e) => e.stopPropagation());
-
-  // Enable resizing
-  box.style.resize = "both";
-  box.style.overflow = "auto";
-}
-
-document.addEventListener("mousemove", (e) => {
-  if (currentTextBox) {
-    currentTextBox.style.left = `${e.pageX - container.offsetLeft - offsetX}px`;
-    currentTextBox.style.top = `${e.pageY - container.offsetTop - offsetY}px`;
+boldBtn.onclick = () => {
+  boldBtn.classList.toggle("active");
+  if (selectedBox) {
+    document.execCommand("bold");
   }
-});
+};
 
-document.addEventListener("mouseup", () => currentTextBox = null);
-
-function deleteSelected() {
-  if (document.activeElement.classList.contains("text-box")) {
-    document.activeElement.remove();
+italicBtn.onclick = () => {
+  italicBtn.classList.toggle("active");
+  if (selectedBox) {
+    document.execCommand("italic");
   }
-}
+};
+
+fontSelect.onchange = () => {
+  if (selectedBox) selectedBox.style.fontFamily = fontSelect.value;
+};
+
+fontSizeSelect.onchange = () => {
+  if (selectedBox) selectedBox.style.fontSize = fontSizeSelect.value;
+};
+
+fontColorPicker.oninput = () => {
+  if (selectedBox) selectedBox.style.color = fontColorPicker.value;
+};
+
+deleteBtn.onclick = () => {
+  if (selectedBox && overlay.contains(selectedBox)) {
+    overlay.removeChild(selectedBox);
+    selectedBox = null;
+  }
+};
